@@ -43,7 +43,7 @@ const SendImage = () => {
 
     try {
       const response = await axios.post(
-        "http://tg-img-store.onrender.com/bot/upload-image",
+        "https://tg-img-store.onrender.com/bot/upload-image",
         formData,
         {
           headers: {
@@ -68,14 +68,14 @@ const SendImage = () => {
   });
 
   useEffect(()=>{
-    axios.get(`http://tg-img-store.onrender.com/bot/all-documents/animes`).then((response) => {
+    axios.get(`https://tg-img-store.onrender.com/bot/all-documents/animes`).then((response) => {
       setCategoryOptions(response.data.waifus);
     });
   },[])
 
   useEffect(() => {
       
-    axios.get("http://tg-img-store.onrender.com/bot/all-folders").then((response) => {
+    axios.get("https://tg-img-store.onrender.com/bot/all-folders").then((response) => {
       setFolderOptions(response.data);
     });
   }, []);
