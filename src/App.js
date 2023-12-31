@@ -5,7 +5,7 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 function App() {
   // const fetchData = async () => {
   //   try {
-  //     const response = await axios.get("http://localhost:4000/bot/mongo-fetch");
+  //     const response = await axios.get("http://tg-img-store.onrender.com/bot/mongo-fetch");
 
   //     const imagePromises = response.data.a.map(async (item) => {
   //       const imageResponse = await axios.post(
