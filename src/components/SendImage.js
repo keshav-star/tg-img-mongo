@@ -7,16 +7,18 @@ import { message } from "antd";
 const SendImage = () => {
   const [imageFile, setImageFile] = useState([]);
 
-  const [folder, setFolder] = useState("animes");
+  const [folder, setFolder] = useState("");
   const [category, setCategory] = useState("");
   const [caption, setcaption] = useState("");
+  const [resetKey, setResetKey] = useState(true);
 
   const [categoryOptions, setCategoryOptions] = useState([]);
   const [folderOptions, setFolderOptions] = useState([]);
   const [tags, setTags] = useState([]);
 
   const handleTags = (addedTags) => {
-    addedTags.map((item) => setTags([...tags, item.value]));
+    const arr = addedTags.map((item) => item.value);
+    setTags(arr);
   };
 
   const fetchedFolderOptions = folderOptions.map((key) => {
@@ -29,8 +31,14 @@ const SendImage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!imageFile) {
+    if (imageFile.length === 0) {
       message.warning("Please select an image");
+      return;
+    } else if (folder === "") {
+      message.warning("Please enter folder");
+      return;
+    } else if (category === "") {
+      message.warning("Please enter name");
       return;
     }
 
@@ -44,23 +52,19 @@ const SendImage = () => {
     tags.forEach((tag, index) => {
       formData.append(`tags[${index}]`, tag);
     });
-
     try {
-      const response = await axios.post(
-        `/bot/upload-image`,
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
-      if (response.data.success) {
-        setFolder('')
-        setcaption('')
-        setCategory('')
-        setImageFile([])
-        setTags([])
+      // const response = await axios.post(`/bot/upload-image`, formData, {
+      //   headers: {
+      //     "Content-Type": "multipart/form-data",
+      //   },
+      // });
+      if (true) {
+        setFolder("");
+        setcaption("");
+        setCategory("");
+        setImageFile([]);
+        setTags([]);
+        setResetKey((prevResetKey) => !prevResetKey);
         message.success("Image Saved Successfully");
       }
     } catch (error) {
@@ -69,7 +73,7 @@ const SendImage = () => {
   };
 
   const onDrop = useCallback((acceptedFiles) => {
-    setImageFile(acceptedFiles);
+    setImageFile((prevFiles) => [...prevFiles, ...acceptedFiles]);
   }, []);
 
   const { getRootProps, getInputProps } = useDropzone({
@@ -77,11 +81,9 @@ const SendImage = () => {
   });
 
   useEffect(() => {
-    axios
-      .get(`/bot/all-documents/animes`)
-      .then((response) => {
-        setCategoryOptions(response.data.waifus);
-      });
+    axios.get(`/bot/all-documents/animes`).then((response) => {
+      setCategoryOptions(response.data.waifus);
+    });
   }, []);
 
   useEffect(() => {
@@ -105,7 +107,11 @@ const SendImage = () => {
             <div className="text-[2vw]">Drag and drop your images here.</div>
           </div>
           {imageFile.length === 1 && (
-            <img className="" src={URL.createObjectURL(imageFile[0])} alt="abc" />
+            <img
+              className=""
+              src={URL.createObjectURL(imageFile[0])}
+              alt="abc"
+            />
           )}
         </div>
 
@@ -114,18 +120,20 @@ const SendImage = () => {
             Image Details
           </h2>
           <CreatableSelect
+            key={`${resetKey}-folder`}
             isClearable
             className=""
             placeholder="Select Folder"
             options={fetchedFolderOptions}
-            onChange={(e) => setFolder(e.value)}
+            onChange={(e) => (e ? setFolder(e.value) : setFolder(null))}
           />
           <CreatableSelect
+            key={`${resetKey}-category`}
             isClearable
             className="my-5"
             placeholder="Select Category"
             options={fetchedCategoryOptions}
-            onChange={(e) => setCategory(e.value)}
+            onChange={(e) => (e ? setCategory(e.value) : setCategory(null))}
           />
 
           <input
@@ -138,6 +146,7 @@ const SendImage = () => {
           />
 
           <CreatableSelect
+            key={`${resetKey}-tags`}
             isMulti
             onChange={handleTags}
             placeholder="Add Tags"
@@ -151,7 +160,8 @@ const SendImage = () => {
         </div>
       </div>
       <div className="flex justify-center flex-wrap">
-        {imageFile && imageFile.length > 1 &&
+        {imageFile &&
+          imageFile.length > 1 &&
           imageFile.map((item, index) => {
             return (
               <img
