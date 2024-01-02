@@ -124,9 +124,8 @@ router.get("/all-documents/:schemaName", async (req, res) => {
     // console.log(schemaName)
     const Model = getOrCreateSchema(schemaName);
     const documents = await Model.find({});
-    const waifus = documents.map(document => document.name);
+    const waifus = documents.map((document) => document.name);
     res.json({ success: true, waifus });
-
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
@@ -154,23 +153,31 @@ router.get("/mongo-fetch", async (req, res) => {
   }
 });
 
-router.post("/upload-image", upload.single("image"), async (req, res) => {
+router.post("/upload-image", upload.array("image", 12), async (req, res) => {
   try {
     const channel = process.env.CHANNEL_ID;
 
     const { caption, category, folder, tags } = req.body;
     // Send the photo to the channel
-    const sentPhoto = await bot.sendPhoto(channel, req.file.buffer, {
-      caption: caption,
-    });
+    let photoid = [];
+    for (const img of req.files) {
+      try {
+        const sentPhoto = await bot.sendPhoto(channel, img.buffer, {
+          caption: caption,
+        });
 
-    const photoid = sentPhoto.photo[sentPhoto.photo.length - 1].file_id;
+        photoid.push(sentPhoto.photo[sentPhoto.photo.length - 1].file_id);
+      } catch (error) {
+        console.error("Error sending photo:", error.message);
+      }
+    }
 
     const documentData = {
       name: category,
       tags: tags,
-      urls: [photoid],
+      urls: photoid,
     };
+
 
     const Model = getOrCreateSchema(folder);
 

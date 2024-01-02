@@ -5,7 +5,7 @@ import axios from "axios";
 import { message } from "antd";
 
 const SendImage = () => {
-  const [imageFile, setImageFile] = useState(null);
+  const [imageFile, setImageFile] = useState([]);
 
   const [folder, setFolder] = useState("animes");
   const [category, setCategory] = useState("");
@@ -35,15 +35,19 @@ const SendImage = () => {
     }
 
     const formData = new FormData();
-    formData.append("image", imageFile); // Assuming imageFile is the selected file
     formData.append("caption", caption);
     formData.append("category", category);
     formData.append("folder", folder);
-    formData.append("tags", tags);
+    imageFile.forEach((file) => {
+      formData.append(`image`, file);
+    });
+    tags.forEach((tag, index) => {
+      formData.append(`tags[${index}]`, tag);
+    });
 
     try {
       const response = await axios.post(
-        "https://tg-img-store.onrender.com/bot/upload-image",
+        "http://localhost:4000/bot/upload-image",
         formData,
         {
           headers: {
@@ -52,6 +56,11 @@ const SendImage = () => {
         }
       );
       if (response.data.success) {
+        setFolder('')
+        setcaption('')
+        setCategory('')
+        setImageFile([])
+        setTags([])
         message.success("Image Saved Successfully");
       }
     } catch (error) {
@@ -60,22 +69,23 @@ const SendImage = () => {
   };
 
   const onDrop = useCallback((acceptedFiles) => {
-    setImageFile(acceptedFiles[0]);
+    setImageFile(acceptedFiles);
   }, []);
 
   const { getRootProps, getInputProps } = useDropzone({
     onDrop,
   });
 
-  useEffect(()=>{
-    axios.get(`https://tg-img-store.onrender.com/bot/all-documents/animes`).then((response) => {
-      setCategoryOptions(response.data.waifus);
-    });
-  },[])
+  useEffect(() => {
+    axios
+      .get(`http://localhost:4000/bot/all-documents/animes`)
+      .then((response) => {
+        setCategoryOptions(response.data.waifus);
+      });
+  }, []);
 
   useEffect(() => {
-      
-    axios.get("https://tg-img-store.onrender.com/bot/all-folders").then((response) => {
+    axios.get("http://localhost:4000/bot/all-folders").then((response) => {
       setFolderOptions(response.data);
     });
   }, []);
@@ -94,8 +104,8 @@ const SendImage = () => {
             <input {...getInputProps()} />
             <div className="text-[2vw]">Drag and drop your images here.</div>
           </div>
-          {imageFile && (
-            <img className="" src={URL.createObjectURL(imageFile)} alt="abc" />
+          {imageFile.length === 1 && (
+            <img className="" src={URL.createObjectURL(imageFile[0])} alt="abc" />
           )}
         </div>
 
@@ -127,7 +137,11 @@ const SendImage = () => {
             onChange={(e) => setcaption(e.target.value)}
           />
 
-          <CreatableSelect isMulti onChange={handleTags} placeholder="Add Tags"/>
+          <CreatableSelect
+            isMulti
+            onChange={handleTags}
+            placeholder="Add Tags"
+          />
           <button
             className="rounded-[10px] w-[12vw] text-lg text-white px-3 py-2 my-4 bg-gray-500 hover:bg-gray-600"
             onClick={(e) => handleSubmit(e)}
@@ -135,6 +149,19 @@ const SendImage = () => {
             Send
           </button>
         </div>
+      </div>
+      <div className="flex justify-center flex-wrap">
+        {imageFile && imageFile.length > 1 &&
+          imageFile.map((item, index) => {
+            return (
+              <img
+                className=""
+                key={index}
+                src={URL.createObjectURL(item)}
+                alt="abc"
+              />
+            );
+          })}
       </div>
     </div>
   );
