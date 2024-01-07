@@ -53,12 +53,12 @@ const SendImage = () => {
       formData.append(`tags[${index}]`, tag);
     });
     try {
-      // const response = await axios.post(`/bot/upload-image`, formData, {
-      //   headers: {
-      //     "Content-Type": "multipart/form-data",
-      //   },
-      // });
-      if (true) {
+      const response = await axios.post(`/bot/upload-image`, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+      if (response.data.success) {
         setFolder("");
         setcaption("");
         setCategory("");
