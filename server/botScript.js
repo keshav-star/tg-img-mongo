@@ -154,7 +154,7 @@ router.get("/mongo-fetch", async (req, res) => {
   }
 });
 
-router.post("/upload-image", upload.array("image", 12), async (req, res) => {
+router.post("/upload-image", upload.array("image", 40), async (req, res) => {
   try {
     const channel = process.env.CHANNEL_ID;
 
