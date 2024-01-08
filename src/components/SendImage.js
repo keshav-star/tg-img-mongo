@@ -59,11 +59,11 @@ const SendImage = () => {
         },
       });
       if (response.data.success) {
-        setFolder("");
-        setcaption("");
-        setCategory("");
-        setImageFile([]);
-        setTags([]);
+        // setFolder("");
+        // setcaption("");
+        // setCategory("");
+        // setImageFile([]);
+        // setTags([]);
         setResetKey((prevResetKey) => !prevResetKey);
         message.success("Image Saved Successfully");
       }
@@ -106,6 +106,7 @@ const SendImage = () => {
             <input {...getInputProps()} />
             <div className="text-[2vw]">Drag and drop your images here.</div>
           </div>
+          <button onClick={()=>setImageFile([])}>Clear</button>
           {imageFile.length === 1 && (
             <img
               className=""
