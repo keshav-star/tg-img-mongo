@@ -76,61 +76,60 @@ router.get("/all-documents/:schemaName", async (req, res) => {
   }
 });
 
-router.post("/send-image", upload.single("image"), async (req, res) => {
-  try {
-    const channel = process.env.CHANNEL_ID;
+// router.post("/send-image", upload.single("image"), async (req, res) => {
+//   try {
 
-    const { fieldName, caption } = req.body;
-    // Send the photo to the channel
-    const sentPhoto = await bot.sendPhoto(channel, req.file.buffer, {
-      caption: caption,
-    });
+//     const { fieldName, caption, channel } = req.body;
+//     // Send the photo to the channel
+//     const sentPhoto = await bot.sendPhoto(channel, req.file.buffer, {
+//       caption: caption,
+//     });
 
-    const photoid = sentPhoto.photo[sentPhoto.photo.length - 1].file_id;
+//     const photoid = sentPhoto.photo[sentPhoto.photo.length - 1].file_id;
 
-    // Find the document with the given fieldName
+//     // Find the document with the given fieldName
 
-    const existingDocument = await DynamicModel.findOne({});
-    // console.log(existingDocument)
+//     const existingDocument = await DynamicModel.findOne({});
+//     // console.log(existingDocument)
 
-    if (existingDocument.dynamicFields.get(fieldName)) {
-      // If the field already exists, push fileId to the array
-      existingDocument.dynamicFields.get(fieldName).push(photoid);
-    } else {
-      // If the field doesn't exist, create a new one
-      existingDocument.dynamicFields.set(fieldName, [photoid]);
-    }
+//     if (existingDocument.dynamicFields.get(fieldName)) {
+//       // If the field already exists, push fileId to the array
+//       existingDocument.dynamicFields.get(fieldName).push(photoid);
+//     } else {
+//       // If the field doesn't exist, create a new one
+//       existingDocument.dynamicFields.set(fieldName, [photoid]);
+//     }
 
-    // Save the document
-    await existingDocument.save();
+//     // Save the document
+//     await existingDocument.save();
 
-    // if (existingDocument) {
-    //   // If the field already exists, push fileId to the array
-    //   existingDocument[fieldName].push(photoid);
-    // } else {
-    //   // If the field doesn't exist, create a new one
-    //   DynamicSchema.add({
-    //     [fieldName]: [String], // Create an array with the first photoid
-    //   });
-    //   const newDocument = new DynamicModel({
-    //     [fieldName]: [photoid],
-    //   });
-    //   await newDocument.save();
-    // }
-    return res.json({
-      success: true,
-      message: {
-        botToken: process.env.BOT_ID,
-        fileId: photoid,
-      },
-    });
-  } catch (error) {
-    return res.send({
-      success: false,
-      message: error.message,
-    });
-  }
-});
+//     // if (existingDocument) {
+//     //   // If the field already exists, push fileId to the array
+//     //   existingDocument[fieldName].push(photoid);
+//     // } else {
+//     //   // If the field doesn't exist, create a new one
+//     //   DynamicSchema.add({
+//     //     [fieldName]: [String], // Create an array with the first photoid
+//     //   });
+//     //   const newDocument = new DynamicModel({
+//     //     [fieldName]: [photoid],
+//     //   });
+//     //   await newDocument.save();
+//     // }
+//     return res.json({
+//       success: true,
+//       message: {
+//         botToken: process.env.BOT_ID,
+//         fileId: photoid,
+//       },
+//     });
+//   } catch (error) {
+//     return res.send({
+//       success: false,
+//       message: error.message,
+//     });
+//   }
+// });
 
 router.get("/mongo-fetch", async (req, res) => {
   try {
@@ -156,11 +155,17 @@ router.get("/mongo-fetch", async (req, res) => {
 
 router.post("/upload-image", upload.array("image", 40), async (req, res) => {
   try {
-    const channel = process.env.CHANNEL_ID;
+    const { caption, category, folder, tags, channelName } = req.body;
 
-    const { caption, category, folder, tags } = req.body;
+    let channel;
+
+    if (channelName === "ecchi") channel = process.env.ECCHI;
+    else if (channelName === "waifus") channel = process.env.WAIFUS;
+    else if (channelName === "mitsuri") channel = process.env.MITSURI;
+    else channel = process.env.CHANNEL_ID;
     // Send the photo to the channel
     let photoid = [];
+
     for (const img of req.files) {
       try {
         const sentPhoto = await bot.sendPhoto(channel, img.buffer, {
@@ -173,12 +178,18 @@ router.post("/upload-image", upload.array("image", 40), async (req, res) => {
       }
     }
 
+    if(channelName === "ecchi"){
+      return res.json({
+        success: true,
+        message: "Uploaded SuccessFully",
+      });
+    }
+
     const documentData = {
       name: category,
       tags: tags,
       urls: photoid,
     };
-
 
     const Model = getOrCreateSchema(folder);
 

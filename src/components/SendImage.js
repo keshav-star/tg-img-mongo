@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import CreatableSelect from "react-select/creatable";
 import { useDropzone } from "react-dropzone";
 import axios from "axios";
 import { message } from "antd";
 
 const SendImage = () => {
+  const channelName = useRef();
   const [imageFile, setImageFile] = useState([]);
 
   const [folder, setFolder] = useState("");
@@ -46,6 +47,7 @@ const SendImage = () => {
     formData.append("caption", caption);
     formData.append("category", category);
     formData.append("folder", folder);
+    formData.append("channelName", channelName.current.value);
     imageFile.forEach((file) => {
       formData.append(`image`, file);
     });
@@ -76,7 +78,7 @@ const SendImage = () => {
     setImageFile((prevFiles) => [...prevFiles, ...acceptedFiles]);
   }, []);
 
-  const { getRootProps, getInputProps } = useDropzone({
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
   });
 
@@ -104,9 +106,17 @@ const SendImage = () => {
             {...getRootProps()}
           >
             <input {...getInputProps()} />
-            <div className="text-[2vw]">Drag and drop your images here.</div>
+            <div
+              className={`text-[2vw] ${
+                isDragActive
+                  ? "absolute w-[100vw] h-[100vh] bg-blue-400 bg-opacity-50 top-0 left-0"
+                  : "hidden"
+              }`}
+            >
+              Drag and drop your images here.
+            </div>
           </div>
-          <button onClick={()=>setImageFile([])}>Clear</button>
+          <button onClick={() => setImageFile([])}>Clear</button>
           {imageFile.length === 1 && (
             <img
               className=""
@@ -145,6 +155,17 @@ const SendImage = () => {
             value={caption}
             onChange={(e) => setcaption(e.target.value)}
           />
+
+          <select
+            ref={channelName}
+            className="border-2 w-[20vw] my-5 p-2 rounded block bg-white text-gray-400 "
+          >
+            <option value="">Select Channel Name</option>
+            <option value="mitsuri">Mitsuri</option>
+            <option value="ecchi">Ecchi</option>
+            <option value="Waifus">Waifus</option>
+            <option value="store">Image Store</option>
+          </select>
 
           <CreatableSelect
             key={`${resetKey}-tags`}
