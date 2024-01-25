@@ -163,7 +163,7 @@ const SendImage = () => {
             <option value="">Select Channel Name</option>
             <option value="mitsuri">Mitsuri</option>
             <option value="ecchi">Ecchi</option>
-            <option value="Waifus">Waifus</option>
+            <option value="waifus">Waifus</option>
             <option value="store">Image Store</option>
           </select>
 
