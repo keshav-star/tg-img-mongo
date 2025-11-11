@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 
-const userSchema = mongoose.Schema(
+// User/Admin schema
+const userSchema = new mongoose.Schema(
   {
     file_id: {
       type: String,
@@ -8,13 +9,35 @@ const userSchema = mongoose.Schema(
       unique: true,
     },
     password: {
-        type: String,
-        required: true,
-    }
+      type: String,
+      required: true,
+    },
   },
   {
     timestamps: true,
   }
 );
 
-module.exports = mongoose.model("admins", userSchema);
+const AnimeSchema = new mongoose.Schema({
+  name: String,
+  tags: [String],
+  urls: [String],
+});
+
+// Cloudinary schema
+const cloudinarySchema = new mongoose.Schema({
+  name: String,
+  tags: [String],
+  urls: [String],
+});
+
+// Models
+const ImageModel = mongoose.model("admins", userSchema);
+const CloudinaryModel = mongoose.model("Cloudinary", cloudinarySchema);
+const AnimeModel = mongoose.model("Animes", AnimeSchema);
+
+module.exports = {
+  ImageModel,
+  CloudinaryModel,
+  AnimeModel,
+};

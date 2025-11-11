@@ -1,0 +1,9 @@
+add multiple categories upload
+
+image limit on frontend
+
+discord upload also
+
+individual image remove
+
+download all images to local button

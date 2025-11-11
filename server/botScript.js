@@ -1,224 +1,81 @@
-const express = require("express");
-const multer = require("multer");
-const router = express.Router();
 const mongoose = require("mongoose");
+const { CloudinaryModel, AnimeModel } = require("./imageModel");
+const {
+  sendImagesToTelegram,
+  uploadImagesToCloudinary,
+  getTelegramChannel,
+  uploadUrlsToDb,
+} = require("./helper");
 
-const TelegramBot = require("node-telegram-bot-api");
 
-const bot = new TelegramBot(process.env.BOT_ID, { polling: true });
-
-const storage = multer.memoryStorage();
-const upload = multer({ storage: storage });
-
-// // Define the schema and model
-// const DynamicSchema = new mongoose.Schema({
-//   dynamicFields: {
-//     type: Map,
-//     of: [String], // Assuming the values are strings, adjust based on your actual data type
-//     default: {},
-//   },
-//   // Your other static fields here
-// });
-
-// const DynamicModel = mongoose.model("DynamicModel", DynamicSchema);
-
-const getOrCreateSchema = (dynamicString) => {
-  const existingModels = mongoose.modelNames();
-
-  if (existingModels.includes(dynamicString)) {
-    return mongoose.model(dynamicString);
-  }
-
-  // Create a new schema
-  const dynamicSchema = new mongoose.Schema({
-    name: String,
-    tags: [String],
-    urls: [String],
-  });
-
-  return mongoose.model(dynamicString, dynamicSchema);
-};
-
-router.get("/", async (req, res) => {
-  try {
-    return res.send({
-      success: true,
-      message: "Welcome Admin",
-    });
-  } catch (error) {
-    return res.send({
-      success: false,
-      message: error.message,
-    });
-  }
-});
-
-router.get("/all-folders", async (req, res) => {
+// 🟢 Get all existing model names (folders)
+const getAllFolders = async (req, res) => {
   try {
     const modelNames = mongoose.connection.modelNames();
-    res.send(modelNames);
+    res.json(modelNames);
   } catch (error) {
-    console.log(error);
+    console.error(error);
+    res.status(500).json({ success: false, message: error.message });
   }
-});
+};
 
-router.get("/all-documents/:schemaName", async (req, res) => {
+// 🟢 Get all documents inside a specific schema
+const getAllCategories = async (req, res) => {
   try {
-    const schemaName = req.params.schemaName;
-
-    // console.log(schemaName)
-    const Model = getOrCreateSchema(schemaName);
-    const documents = await Model.find({});
-    const waifus = documents.map((document) => document.name);
+    const documents = await AnimeModel.find({});
+    const waifus = documents.map((doc) => doc.name);
     res.json({ success: true, waifus });
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    res.status(500).json({ success: false, message: error.message });
   }
-});
+};
 
-// router.post("/send-image", upload.single("image"), async (req, res) => {
-//   try {
-
-//     const { fieldName, caption, channel } = req.body;
-//     // Send the photo to the channel
-//     const sentPhoto = await bot.sendPhoto(channel, req.file.buffer, {
-//       caption: caption,
-//     });
-
-//     const photoid = sentPhoto.photo[sentPhoto.photo.length - 1].file_id;
-
-//     // Find the document with the given fieldName
-
-//     const existingDocument = await DynamicModel.findOne({});
-//     // console.log(existingDocument)
-
-//     if (existingDocument.dynamicFields.get(fieldName)) {
-//       // If the field already exists, push fileId to the array
-//       existingDocument.dynamicFields.get(fieldName).push(photoid);
-//     } else {
-//       // If the field doesn't exist, create a new one
-//       existingDocument.dynamicFields.set(fieldName, [photoid]);
-//     }
-
-//     // Save the document
-//     await existingDocument.save();
-
-//     // if (existingDocument) {
-//     //   // If the field already exists, push fileId to the array
-//     //   existingDocument[fieldName].push(photoid);
-//     // } else {
-//     //   // If the field doesn't exist, create a new one
-//     //   DynamicSchema.add({
-//     //     [fieldName]: [String], // Create an array with the first photoid
-//     //   });
-//     //   const newDocument = new DynamicModel({
-//     //     [fieldName]: [photoid],
-//     //   });
-//     //   await newDocument.save();
-//     // }
-//     return res.json({
-//       success: true,
-//       message: {
-//         botToken: process.env.BOT_ID,
-//         fileId: photoid,
-//       },
-//     });
-//   } catch (error) {
-//     return res.send({
-//       success: false,
-//       message: error.message,
-//     });
-//   }
-// });
-
-router.get("/mongo-fetch", async (req, res) => {
+// 🟢 Fetch all MongoDB documents from all models
+const mongoFetch = async (req, res) => {
   try {
     const modelNames = mongoose.modelNames();
     const allDocuments = {};
 
-    // Loop through each model
     for (const modelName of modelNames) {
       const Model = mongoose.model(modelName);
-
-      // Fetch all documents for the current model
-      const documents = await Model.find({});
-
-      // Store the documents in the result object
-      allDocuments[modelName] = documents;
+      allDocuments[modelName] = await Model.find({});
     }
 
-    res.send(allDocuments);
+    res.json(allDocuments);
   } catch (error) {
-    console.log(error);
+    console.error(error);
+    res.status(500).json({ success: false, message: error.message });
   }
-});
+};
 
-router.post("/upload-image", upload.array("image", 40), async (req, res) => {
+// 🟢 Upload Images
+const uploadImages = async (req, res) => {
   try {
-    const { caption, category, folder, tags, channelName } = req.body;
+    const { caption, category, tags, channelName } = req.body;
 
-    let channel;
+    const channel = getTelegramChannel(channelName);
 
-    if (channelName === "ecchi") channel = process.env.ECCHI;
-    else if (channelName === "waifus") channel = process.env.WAIFUS;
-    else if (channelName === "mitsuri") channel = process.env.MITSURI;
-    else channel = process.env.CHANNEL_ID;
-    // Send the photo to the channel
-    let photoid = [];
+    // 1️⃣ Send to Telegram
+    const photoIds = await sendImagesToTelegram(channel, caption, req.files);
 
-    for (const img of req.files) {
-      try {
-        const sentPhoto = await bot.sendPhoto(channel, img.buffer, {
-          caption: caption,
-        });
+    // 3️⃣ Upload to Cloudinary (under anime/<category>)
+    const urls = await uploadImagesToCloudinary(req.files, category);
 
-        photoid.push(sentPhoto.photo[sentPhoto.photo.length - 1].file_id);
-      } catch (error) {
-        console.error("Error sending photo:", error.message);
-      }
-    }
+    console.log("uploading to anime model");
+    await uploadUrlsToDb(photoIds, category, tags, AnimeModel);
+    console.log("uploading to cloudinary model");
+    await uploadUrlsToDb(urls, category, tags, CloudinaryModel);
 
-    if(channelName === "ecchi"){
-      return res.json({
-        success: true,
-        message: "Uploaded SuccessFully",
-      });
-    }
-
-    const documentData = {
-      name: category,
-      tags: tags,
-      urls: photoid,
-    };
-
-    const Model = getOrCreateSchema(folder);
-
-    // Check if a document with the given name already exists
-    const existingDocument = await Model.findOne({ name: documentData.name });
-
-    if (existingDocument) {
-      // Document with the given name already exists, update tags and urls
-      existingDocument.tags.push(...documentData.tags);
-      existingDocument.urls.push(...documentData.urls);
-      await existingDocument.save();
-      return existingDocument;
-    }
-
-    // Document with the given name doesn't exist, create a new one
-    const newDocument = new Model(documentData);
-    await newDocument.save();
-
-    return res.json({
-      success: true,
-      message: "Uploaded SuccessFully",
-    });
+    res.json({ success: true, message: "Uploaded Successfully" });
   } catch (error) {
-    console.log(error);
-    return res.json({
-      success: false,
-      message: "Damn You Server",
-    });
+    console.error("❌ Upload Error:", error);
+    res.json({ success: false, message: "Damn You Server" });
   }
-});
+};
 
-module.exports = router;
+module.exports = {
+  getAllFolders,
+  getAllCategories,
+  mongoFetch,
+  uploadImages,
+};
