@@ -20,14 +20,14 @@ const userSchema = new mongoose.Schema(
 
 const AnimeSchema = new mongoose.Schema({
   name: String,
-  tags: [String],
+  tags: [{ type: String, lowercase: true, trim: true }],
   urls: [String],
 });
 
 // Cloudinary schema
 const cloudinarySchema = new mongoose.Schema({
   name: String,
-  tags: [String],
+  tags: [{ type: String, lowercase: true, trim: true }],
   urls: [String],
 });
 

@@ -55,13 +55,19 @@ async function uploadImagesToCloudinary(files, category) {
 
 async function uploadUrlsToDb(urls, category, tags, Model) {
   // 4️⃣ Save/Update in MongoDB
+  // Convert tags to array if it's a string
+  const tagsArray = Array.isArray(tags)
+    ? tags
+    : (tags || "").split(",").map((tag) => tag.trim()).filter((tag) => tag);
+
   const existingDoc = await Model.findOne({ name: category });
   if (existingDoc) {
-    existingDoc.tags.push(...tags);
+    const uniqueTags = new Set([...existingDoc.tags, ...tagsArray]);
+    existingDoc.tags = [...uniqueTags];
     existingDoc.urls.push(...urls);
     await existingDoc.save();
   } else {
-    const newDoc = new Model({ name: category, tags, urls });
+    const newDoc = new Model({ name: category, tags: tagsArray, urls });
     await newDoc.save();
   }
   console.log("✅ Uploaded URLs to", Model.modelName);
